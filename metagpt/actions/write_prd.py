@@ -122,8 +122,8 @@ OUTPUT_MAPPING = {
 
 
 class WritePRD(Action):
-    def __init__(self, name="", context=None, llm=None):
-        super().__init__(name, context, llm)
+    # def __init__(self, name="", context="", llm=LLM()):
+    #     super().__init__(name, context, llm)
 
     async def run(self, requirements, *args, **kwargs) -> ActionOutput:
         sas = SearchAndSummarize()

@@ -12,5 +12,5 @@ from metagpt.roles import Role
 
 class QaEngineer(Role):
     def __init__(self, name, profile, goal, constraints):
-        super().__init__(name, profile, goal, constraints)
+        super().__init__(name=name, profile=profile, goal=goal, constraints=constraints)
         self._init_actions([WriteTest])

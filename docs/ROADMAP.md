@@ -23,6 +23,8 @@ To reach version v0.5, approximately 70% of the following tasks need to be compl
    5. Resolve occasional failure to follow instruction under current prompts, causing code parsing errors, through stricter system prompts
    6. Write documentation, describing the current features and usage at all levels
    7. ~~Support Docker~~
+   8. After completing the initial repo, accept users' addition/modification requirements
+   9. It can read the existing repo and reverse-engineer output files such as PRD (Product Requirements Document), system design, etc.
 2. Features
    1. Support a more standard and stable parser (need to analyze the format that the current LLM is better at)
    2. ~~Establish a separate output queue, differentiated from the message queue~~
@@ -75,7 +77,7 @@ To reach version v0.5, approximately 70% of the following tasks need to be compl
 9. LLM
    1. Support Claude underlying API
    2. ~~Support Azure asynchronous API~~
-   3. Support streaming version of all APIs
+   3. ~~Support streaming version of all APIs~~
    4. ~~Make gpt-3.5-turbo available (HARD)~~
 10. Other
     1. Clean up existing unused code

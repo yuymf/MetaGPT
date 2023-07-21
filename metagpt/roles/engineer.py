@@ -6,10 +6,10 @@
 @File    : engineer.py
 """
 import asyncio
-import re
-import ast
 import shutil
 from pathlib import Path
+
+from pydantic import BaseModel, Field
 
 from metagpt.const import WORKSPACE_ROOT
 from metagpt.logs import logger
@@ -48,10 +48,13 @@ async def gather_ordered_k(coros, k) -> list:
 
 
 class Engineer(Role):
+    todos: list = Field(default_factory=list)
+    n_borg: int = Field(default=1)
+
     def __init__(self, name="Alex", profile="Engineer", goal="Write elegant, readable, extensible, efficient code",
                  constraints="The code you write should conform to code standard like PEP8, be modular, easy to read and maintain",
                  n_borg=1):
-        super().__init__(name, profile, goal, constraints)
+        super().__init__(name=name, profile=profile, goal=goal, constraints=constraints)
         self._init_actions([WriteCode])
         self._watch([WriteTasks])
         self.todos = []
@@ -74,7 +77,7 @@ class Engineer(Role):
         return CodeParser.parse_str(block="Python package name", text=system_design_msg.content)
 
     def get_workspace(self) -> Path:
-        msg = self._rc.memory.get_by_action(WriteDesign)[-1]
+        msg = self.rc.memory.get_by_action(WriteDesign)[-1]
         if not msg:
             return WORKSPACE_ROOT / 'src'
         workspace = self.parse_workspace(msg)
@@ -95,8 +98,8 @@ class Engineer(Role):
         file.write_text(code)
 
     def recv(self, message: Message) -> None:
-        self._rc.memory.add(message)
-        if message in self._rc.important_memory:
+        self.rc.memory.add(message)
+        if message in self.rc.important_memory:
             self.todos = self.parse_tasks(message)
 
     async def _act_mp(self) -> Message:
@@ -104,7 +107,7 @@ class Engineer(Role):
         todo_coros = []
         for todo in self.todos:
             todo_coro = WriteCode().run(
-                context=self._rc.memory.get_by_actions([WriteTasks, WriteDesign]),
+                context=self.rc.memory.get_by_actions([WriteTasks, WriteDesign]),
                 filename=todo
             )
             todo_coros.append(todo_coro)
@@ -115,28 +118,28 @@ class Engineer(Role):
             logger.info(todo)
             logger.info(code_rsp)
             # self.write_file(todo, code)
-            msg = Message(content=code_rsp, role=self.profile, cause_by=type(self._rc.todo))
-            self._rc.memory.add(msg)
+            msg = Message(content=code_rsp, role=self.profile, cause_by=type(self.rc.todo))
+            self.rc.memory.add(msg)
             del self.todos[0]
 
         logger.info(f'Done {self.get_workspace()} generating.')
-        msg = Message(content="all done.", role=self.profile, cause_by=type(self._rc.todo))
+        msg = Message(content="all done.", role=self.profile, cause_by=type(self.rc.todo))
         return msg
 
     async def _act_sp(self) -> Message:
         for todo in self.todos:
             code_rsp = await WriteCode().run(
-                context=self._rc.history,
+                context=self.rc.history,
                 filename=todo
             )
             # logger.info(todo)
             # logger.info(code_rsp)
             # code = self.parse_code(code_rsp)
-            msg = Message(content=code_rsp, role=self.profile, cause_by=type(self._rc.todo))
-            self._rc.memory.add(msg)
+            msg = Message(content=code_rsp, role=self.profile, cause_by=type(self.rc.todo))
+            self.rc.memory.add(msg)
 
         logger.info(f'Done {self.get_workspace()} generating.')
-        msg = Message(content="all done.", role=self.profile, cause_by=type(self._rc.todo))
+        msg = Message(content="all done.", role=self.profile, cause_by=type(self.rc.todo))
         return msg
 
     async def _act(self) -> Message:

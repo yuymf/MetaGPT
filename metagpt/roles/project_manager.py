@@ -12,6 +12,6 @@ from metagpt.actions import WriteTasks, AssignTasks, WriteDesign
 class ProjectManager(Role):
     def __init__(self, name="Eve", profile="Project Manager",
                  goal="Improve team efficiency and deliver with quality and quantity", constraints=""):
-        super().__init__(name, profile, goal, constraints)
+        super().__init__(name=name, profile=profile, goal=goal, constraints=constraints)
         self._init_actions([WriteTasks])
         self._watch([WriteDesign])

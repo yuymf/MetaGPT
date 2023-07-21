@@ -11,4 +11,4 @@ from metagpt.roles import Role
 def test_role_desc():
     i = Role(profile='Sales', desc='Best Seller')
     assert i.profile == 'Sales'
-    assert i._setting.desc == 'Best Seller'
+    assert i.setting.desc == 'Best Seller'

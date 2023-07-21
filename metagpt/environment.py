@@ -18,7 +18,7 @@ from pydantic import (
     Field,
 )
 
-from metagpt.roles import Role
+from metagpt.roles import Role, RoleContext
 from metagpt.schema import Message
 from metagpt.memory import Memory
 
@@ -32,6 +32,9 @@ class Environment(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        json_encoders = {
+            RoleContext: lambda x: x.unique_identifier()
+        }
 
     def add_role(self, role: Role):
         """增加一个在当前环境的Role"""

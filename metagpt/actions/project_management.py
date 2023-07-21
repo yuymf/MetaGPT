@@ -105,8 +105,8 @@ OUTPUT_MAPPING = {
 
 class WriteTasks(Action):
 
-    def __init__(self, name="CreateTasks", context=None, llm=None):
-        super().__init__(name, context, llm)
+    # def __init__(self, name="CreateTasks", context=None, llm=None):
+    #     super().__init__(name, context, llm)
 
     def _save(self, context, rsp):
         ws_name = CodeParser.parse_str(block="Python package name", text=context[-1].content)

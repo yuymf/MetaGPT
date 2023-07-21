@@ -8,25 +8,25 @@
 from typing import Optional
 from abc import ABC
 
+from tenacity import retry, stop_after_attempt, wait_fixed
+from pydantic import BaseModel, Field
+
 from metagpt.llm import LLM
 from metagpt.actions.action_output import ActionOutput
-from tenacity import retry, stop_after_attempt, wait_fixed
-from pydantic import BaseModel
 from metagpt.utils.common import OutputParser
 
 
-class Action(ABC):
-    def __init__(self, name: str = '', context=None, llm: LLM = None):
-        self.name: str = name
-        if llm is None:
-            llm = LLM()
-        self.llm = llm
-        self.context = context
-        self.prefix = ""
-        self.profile = ""
-        self.desc = ""
-        self.content = ""
-        self.instruct_content = None
+class Action(BaseModel, ABC):
+    name: str = Field(default="")
+    context: str = Field(default="")
+    prefix: str = Field(default="")
+    profile: str = Field(default="")
+    desc: str = Field(default="")
+    context: str = Field(default="")
+    llm: LLM = Field(default_factory=LLM)
+
+    def __init__(self, name: str = '', context="", llm: LLM = LLM()):
+        super().__init__(name=name, context=context, llm=llm)
 
     def set_prefix(self, prefix, profile):
         """Set prefix for later usage"""

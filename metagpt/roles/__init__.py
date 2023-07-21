@@ -6,7 +6,7 @@
 @File    : __init__.py
 """
 
-from metagpt.roles.role import Role
+from metagpt.roles.role import Role, RoleContext
 from metagpt.roles.architect import Architect
 from metagpt.roles.product_manager import ProductManager
 from metagpt.roles.project_manager import ProjectManager

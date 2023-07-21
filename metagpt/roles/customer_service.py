@@ -21,6 +21,7 @@ DESC = """
 
 """
 
+
 class CustomerService(Sales):
     def __init__(
             self,
@@ -29,5 +30,4 @@ class CustomerService(Sales):
             desc=DESC,
             store=None
     ):
-        super().__init__(name, profile, desc=desc, store=store)
-
+        super().__init__(name=name, profile=profile, desc=desc, store=store)

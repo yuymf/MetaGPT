@@ -37,8 +37,8 @@ OUTPUT_MAPPING = {
 
 
 class WriteCode(Action):
-    def __init__(self, name="WriteCode", context: list[Message] = None, llm=None):
-        super().__init__(name, context, llm)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def _is_invalid(self, filename):
         return any(i in filename for i in ["mp3", "wav"])

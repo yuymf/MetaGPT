@@ -92,8 +92,8 @@ OUTPUT_MAPPING = {
 
 
 class WriteDesign(Action):
-    def __init__(self, name, context=None, llm=None):
-        super().__init__(name, context, llm)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.desc = "Based on the PRD, think about the system design, and design the corresponding APIs, " \
                     "data structures, library tables, processes, and paths. Please provide your design, feedback " \
                     "clearly and in detail."

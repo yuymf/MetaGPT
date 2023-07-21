@@ -23,7 +23,7 @@ class Sales(Role):
                  "professional guide",
             store=None
     ):
-        super().__init__(name, profile, desc=desc)
+        super().__init__(name=name, profile=profile, desc=desc)
         self._set_store(store)
 
     def _set_store(self, store):

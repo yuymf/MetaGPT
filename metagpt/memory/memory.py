@@ -8,17 +8,16 @@
 from collections import defaultdict
 from typing import Iterable, Type
 
+from pydantic import BaseModel, Field
+
 from metagpt.actions import Action
 from metagpt.schema import Message
 
 
-class Memory:
+class Memory(BaseModel):
     """The most basic memory: super-memory"""
-
-    def __init__(self):
-        """Initialize an empty storage list and an empty index dictionary"""
-        self.storage: list[Message] = []
-        self.index: dict[Type[Action], list[Message]] = defaultdict(list)
+    storage: list[Message] = Field(default_factory=list)
+    index: dict[Type[Action], list[Message]] = Field(default=defaultdict(list))
 
     def add(self, message: Message):
         """Add a new message to storage, while updating the index"""
