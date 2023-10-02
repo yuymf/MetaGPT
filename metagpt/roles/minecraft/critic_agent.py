@@ -119,6 +119,7 @@ class CriticReviewer(Base):
 
         # 获取最新的游戏周边信息
         events = await self._obtain_events()
+        self.perform_game_info_callback(events, self.game_memory.update_event) # update chest_memory / chest observation
         context = self.game_memory.context
         task = self.game_memory.current_task
         chest_observation = self.game_memory.chest_observation
