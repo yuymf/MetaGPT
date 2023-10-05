@@ -103,7 +103,10 @@ class Minecraft(Role):
         self._rc.todo = None
 
     async def _obtain_events(self):
-        return await self.game_memory.on_event()
+        return await self.game_memory.on_event_retrieve()
+    
+    async def _execute_events(self):
+        return await self.game_memory.on_event_execute()
     
     def set_memory(self, shared_memory: 'GameEnviroment'):
         self.game_memory = shared_memory
@@ -116,7 +119,7 @@ class Minecraft(Role):
     
     @staticmethod
     def perform_game_info_callback(info: object, callback: object) -> object:
-        logger.info(info)
+        # logger.info(info)
         callback(info)
     
     def encapsule_message(self, msg, *args, **kwargs):

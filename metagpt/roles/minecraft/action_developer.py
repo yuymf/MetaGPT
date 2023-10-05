@@ -204,8 +204,8 @@ class ActionDeveloper(Base):
         logger.debug(f"Todo is {todo}")
         self.maintain_actions(todo)
         # 获取最新的游戏周边信息
-        events = await self._obtain_events()
-        self.perform_game_info_callback(events, self.game_memory.update_event)
+        events = self.game_memory.event
+
         context = self.game_memory.context
         task = self.game_memory.current_task
         code = self.game_memory.code
