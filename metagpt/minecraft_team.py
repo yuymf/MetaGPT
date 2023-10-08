@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 import requests
 import json
 import re
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
+from metagpt.document_store import FaissStore
 
 from metagpt.logs import logger
 from metagpt.roles import Role
@@ -77,6 +80,24 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
     def core_inv_items_regex(self):
         return self.mf_instance.core_inv_items_regex
     
+    @property
+    def vectordb(self):
+        return Chroma(
+            collection_name="skill_vectordb",
+            embedding_function=OpenAIEmbeddings(),
+            persist_directory=f"{CKPT_DIR}/skill/vectordb",
+        )
+    
+    @property
+    def qa_cache_questions_vectordb(self):
+        return Chroma(
+            collection_name="qa_cache_questions_vectordb",
+            embedding_function=OpenAIEmbeddings(),
+            persist_directory=f"{CKPT_DIR}/curriculum/vectordb",
+        )
+        # TODO: change to FaissStore
+        # return FaissStore{CKPT_DIR}/ 'curriculum/vectordb'
+
     def set_mc_port(self, mc_port):
         self.mf_instance.set_mc_port(mc_port)
     
@@ -91,12 +112,30 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
                 self.completed_tasks = json.load(f)
             with open(f"{CKPT_DIR}/curriculum/failed_tasks.json", "r") as f:
                 self.failed_tasks = json.load(f)
+
             with open(f"{CKPT_DIR}/curriculum/qa_cache.json", "r") as f:
                 self.qa_cache = json.load(f)
+            # Check if qa_cache right using
+            assert self.qa_cache_questions_vectordb._collection.count() == len(
+                self.qa_cache
+            ), (
+                f"Curriculum Agent's qa cache question vectordb is not synced with qa_cache.json.\n"
+                f"There are {self.qa_cache_questions_vectordb._collection.count()} questions in vectordb "
+                f"but {len(self.qa_cache)} questions in qa_cache.json.\n"
+                f"Did you set resume=False when initializing the agent?\n"
+                f"You may need to manually delete the qa cache question vectordb directory for running from scratch.\n"
+            )               
             
             logger.info(f"Loading Skill Manager from {CKPT_DIR}/skill\033[0m")
             with open(f"{CKPT_DIR}/skill/skills.json", "r") as f:
                 self.skills = json.load(f)
+            # Check if Skill Manager's vectordb right using
+            assert self.vectordb._collection.count() == len(self.skills), (
+                f"Skill Manager's vectordb is not synced with skills.json.\n"
+                f"There are {self.vectordb._collection.count()} skills in vectordb but {len(self.skills)} skills in skills.json.\n"
+                f"Did you set resume=False when initializing the manager?\n"
+                f"You may need to manually delete the vectordb directory for running from scratch."
+            )
     
     def register_roles(self, roles: Iterable[Minecraft]):
         for role in roles:
@@ -330,12 +369,14 @@ class MinecraftPlayer(SoftwareCompany):
     game_memory: GameEnvironment = Field(default_factory=GameEnvironment)
     investment: float = Field(default=50.0)
     task: str = Field(default="")
+    resume: bool = Field(default=False)
     game_info: dict = Field(default={})
     
     def set_port(self, mc_port):
         self.game_memory.set_mc_port(mc_port)
     
     def set_resume(self, resume: bool = False):
+        self.resume = resume
         self.game_memory.set_mc_resume(resume=resume)
     
     def check_complete_round(self):
@@ -380,12 +421,23 @@ class MinecraftPlayer(SoftwareCompany):
     async def run(self, n_round=3):
         """Run company until target round or no money"""
         round_id = 0
-        self.game_memory.mf_instance.reset(
-            options={
-                "mode": "soft",
-                "wait_ticks": 20,
-            }
-        )
+        if self.resume:
+            # keep the inventory
+            self.game_memory.mf_instance.reset(
+                options={
+                    "mode": "soft",
+                    "wait_ticks": 20,
+                }
+            )
+        else:
+            # clear the inventory
+            self.game_memory.mf_instance.reset(
+                options={
+                    "mode": "hard",
+                    "wait_ticks": 20,
+                }
+            )
+
         events = self.game_memory.mf_instance.step(
             code="",
             programs="",

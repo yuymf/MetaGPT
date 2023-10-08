@@ -76,11 +76,6 @@ class AddNewSkills(Action):
             metadatas=[{"name": program_name}],
         )
 
-        # FIXME
-        # assert self.vectordb._collection.count() == len(
-        #     skills
-        # ), "vectordb is not synced with skills.json"
-
         with open(f"{CKPT_DIR}/skill/code/{dumped_program_name}.js", "w") as f:
             f.write(program_code)
         with open(f"{CKPT_DIR}/skill/description/{dumped_program_name}.txt", "w") as f:

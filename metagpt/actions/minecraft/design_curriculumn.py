@@ -91,44 +91,46 @@ class DesignCurriculum(Action):
 
     def __init__(self, name="", context=None, llm=None):
         super().__init__(name, context, llm)
-        # voyager vectordb using
 
-    @classmethod
-    def generate_qa(cls, events, chest_observation):
+    async def generate_qa(self, events, human_msg, system_msg):
         """
         Generate qa for DesignTask's HumanMessage
         """
-        questions_new, _ = cls.generate_qa_step1(
-            events=events, chest_observation=chest_observation
+        questions_new = await self.generate_qa_step1(
+            events=events, human_msg=human_msg, system_msg=system_msg
         )
+        logger.debug(f"Generate_qa_step1 result list is HERE: {questions_new}")
+        
         questions = []
         answers = []
         for question in questions_new:
-            if cls.qa_cache_questions_vectordb._collection.count() > 0:
+            if self.qa_cache_questions_vectordb._collection.count() > 0:
                 docs_and_scores = (
-                    cls.qa_cache_questions_vectordb.similarity_search_with_score(
+                    self.qa_cache_questions_vectordb.similarity_search_with_score(
                         question, k=1
                     )
                 )
                 if docs_and_scores and docs_and_scores[0][1] < 0.05:
                     question_cached = docs_and_scores[0][0].page_content
-                    assert question_cached in cls.qa_cache
-                    answer_cached = cls.qa_cache[question_cached]
+                    assert question_cached in self.qa_cache
+                    answer_cached = self.qa_cache[question_cached]
                     questions.append(question_cached)
                     answers.append(answer_cached)
                     continue
-            answer = cls.generate_qa_step2(question=question)
-            assert question not in cls.qa_cache
-            cls.qa_cache[question] = answer
-            cls.qa_cache_questions_vectordb.add_texts(
+            answer = await self.generate_qa_step2(question=question)
+            assert question not in self.qa_cache
+            self.qa_cache[question] = answer
+            self.qa_cache_questions_vectordb.add_texts(
                 texts=[question],
             )
             with open(f"{CKPT_DIR}/curriculum/qa_cache.json", "w") as f:
-                json.dump(cls.qa_cache, f)
-            cls.qa_cache_questions_vectordb.persist()
+                json.dump(self.qa_cache, f)
+            self.qa_cache_questions_vectordb.persist()
             questions.append(question)
             answers.append(answer)
         assert len(questions_new) == len(questions) == len(answers)
+        logger.info(f"Curriculum Agent generate_qa Questions: {questions}")
+        logger.info(f"Curriculum Agent generate_qa Answers: {answers}")
         return questions, answers
 
     async def generate_qa_step1(self, events, human_msg, system_msg):
@@ -157,7 +159,7 @@ class DesignCurriculum(Action):
 
     async def generate_qa_step2(self, question):
         # Implement the logic for another specific step in generating questions and answers.
-        logger.info(f"Curriculum Agent Question: {question}")
+        # logger.info(f"Curriculum Agent generate_qa_step2 Question: {question}")
         human_msg = HumanMessage(content=f"Question: {question}").content
         system_msg = [
             SystemMessage(
@@ -165,7 +167,7 @@ class DesignCurriculum(Action):
             ).content
         ]
         answer = await self._aask(prompt=human_msg, system_msgs=system_msg)
-        logger.info(f"Curriculum Agent {answer}")
+        # logger.info(f"Curriculum Agent generate_qa_step2 answer: {answer}")
         return answer
 
     async def get_context_from_task(self, task):

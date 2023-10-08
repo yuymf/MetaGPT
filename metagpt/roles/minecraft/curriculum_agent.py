@@ -120,7 +120,7 @@ class CurriculumDesigner(Base):
         return observation
 
     # --------------------------------Design Task Prepare---------------------------------------
-    def render_design_task_human_message(
+    async def render_design_task_human_message(
         self, events, chest_observation, *args, **kwargs
     ):
         """
@@ -134,9 +134,15 @@ class CurriculumDesigner(Base):
             events=events, chest_observation=chest_observation
         )
         if self.game_memory.progress >= warm_up["context"]:
-            questions, answers = DesignCurriculum.generate_qa(
+        # if self.game_memory.progress >= 0: # TEST ONLY
+            human_msg = self.render_design_curriculum_human_message(
                 events=events, chest_observation=chest_observation
+            ).content
+            system_msg = [self.render_design_curriculum_system_message().content]
+            questions, answers = await DesignCurriculum().generate_qa(
+                events=events, human_msg=human_msg, system_msg=system_msg
             )
+            logger.debug(f"Generate_qa result is HERE: Ques: {questions}, Ans: {answers}")
             i = 1
             for question, answer in zip(questions, answers):
                 if "Answer: Unknown" in answer or "language model" in answer:
@@ -162,8 +168,8 @@ class CurriculumDesigner(Base):
     def render_design_task_system_message(self, *args, **kwargs):
         return SystemMessage(content=load_prompt("curriculum"))
 
-    def encapsule_design_task_message(self, events, chest_observation, *args, **kwargs):
-        human_msg = self.render_design_task_human_message(
+    async def encapsule_design_task_message(self, events, chest_observation, *args, **kwargs):
+        human_msg = await self.render_design_task_human_message(
             events=events, chest_observation=chest_observation, *args, **kwargs
         )
         system_msg = self.render_design_task_system_message(*args, **kwargs)
@@ -313,18 +319,19 @@ class CurriculumDesigner(Base):
     async def _act(self) -> Message:
         todo = self._rc.todo
         logger.debug(f"Todo is {todo}")
-        self.maintain_actions(todo) 
+        self.maintain_actions(todo)
+
+        if self.round_id == 0:
+            todo.set_vectordb(self.game_memory.vectordb)
+            todo.set_qa_cache(self.game_memory.qa_cache)
+            todo.set_qa_cache_questions_vectordb(self.game_memory.qa_cache_questions_vectordb)
+
         # 获取最新的游戏周边环境信息
         # events = await self._obtain_events()
         events = self.game_memory.event
         chest_observation = self.game_memory.chest_observation
 
-        # DesignCurriculum.set_qa_cache(self.game_memory.qa_cache)
-
-        # msg = self._rc.memory.get(k=1)[0]
-        # query = msg.content
-
-        design_task_message = self.encapsule_design_task_message(
+        design_task_message = await self.encapsule_design_task_message(
             events, chest_observation
         )
         design_curriculum_message = self.encapsule_design_curriculum_message(

@@ -28,8 +28,8 @@ class SkillManager(Base):
         super().__init__(name, profile, goal, constraints)
 
         # Initialize actions specific to the SkillManager role
-        self._init_actions([RetrieveSkills, GenerateSkillDescription, AddNewSkills]) #AddNewSkills])#先去掉add
-        
+        self._init_actions([RetrieveSkills, GenerateSkillDescription, AddNewSkills])
+
         # Set events or actions the SkillManager should watch or be aware of
         self._watch(
             [DesignCurriculum, GenerateActionCode, RetrieveSkills, GenerateSkillDescription]
@@ -88,7 +88,8 @@ class SkillManager(Base):
     async def _act(self) -> Message:
         todo = self._rc.todo
         logger.debug(f"Todo is {todo}")
-        self.maintain_actions(todo)    
+        self.maintain_actions(todo)
+
         # 获取最新的游戏周边信息
         context = self.game_memory.context
         task = self.game_memory.current_task
@@ -97,7 +98,7 @@ class SkillManager(Base):
         self.perform_game_info_callback(self.game_memory.event, self.game_memory.summarize_chatlog)
         event_summary = self.game_memory.event_summary
         try:
-            program_code = code["program_code"] # TODO: Handle code is None, cuz first round DesignCurriculum(code is None) trigger this 
+            program_code = code["program_code"] # fixed: Handle code is None, cuz first round DesignCurriculum(code is None) trigger this 
         except (KeyError, TypeError):
             program_code = ""
 
