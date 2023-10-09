@@ -321,11 +321,6 @@ class CurriculumDesigner(Base):
         logger.debug(f"Todo is {todo}")
         self.maintain_actions(todo)
 
-        if self.round_id == 0:
-            todo.set_vectordb(self.game_memory.vectordb)
-            todo.set_qa_cache(self.game_memory.qa_cache)
-            todo.set_qa_cache_questions_vectordb(self.game_memory.qa_cache_questions_vectordb)
-
         # 获取最新的游戏周边环境信息
         # events = await self._obtain_events()
         events = self.game_memory.event

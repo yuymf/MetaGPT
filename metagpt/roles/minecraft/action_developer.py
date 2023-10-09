@@ -192,8 +192,7 @@ class ActionDeveloper(Base):
     async def run_step(self, human_msg, system_msg, *args, **kwargs):
         while True:
             logger.info(f"self.rollout_num_iter {self.rollout_num_iter}")
-            system_msg, human_msg, reward, done, info = await self.runcode_and_evaluate(human_msg, system_msg, *args,
-                                                                                        **kwargs)
+            system_msg, human_msg, reward, done, info = await self.runcode_and_evaluate(human_msg, system_msg, *args, **kwargs)
             if done:
                 break
         # return [system_msg, human_msg], reward, done, info
@@ -208,6 +207,7 @@ class ActionDeveloper(Base):
     async def handle_add_new_skills(
             self, task, program_name, program_code, skills, *args, **kwargs
     ):
+        skills = self.game_memory.skills
         skill_desp = self.game_memory.skill_desp
         new_skills_info = await AddNewSkills().run(
             task, program_name, program_code, skills, skill_desp
@@ -231,11 +231,9 @@ class ActionDeveloper(Base):
         context = self.game_memory.context
         
         # 更新生成的代码和对应程序名称
-        code, program_name = await GenerateActionCode().run(
+        program_code, code, program_name = await GenerateActionCode().run(
             human_msg, system_msg, *args, **kwargs
         )
-        # logger.warning(type(code))
-        # logger.info(f"Code is Here:{code}")
         
         if code is not None:
             # fixme：若有独立的mc code执行入口函数，使用独立的函数
@@ -298,6 +296,8 @@ class ActionDeveloper(Base):
             "success": self.game_memory.runtime_status,
         }
         logger.info(f"info is {info}")
+            
+        self.perform_game_info_callback(program_code, self.game_memory.update_program_code)
         self.perform_game_info_callback(code, self.game_memory.update_code)
         self.perform_game_info_callback(
             program_name, self.game_memory.update_program_name
@@ -306,11 +306,10 @@ class ActionDeveloper(Base):
         return system_msg, human_msg, 0, done, info
     
     async def generate_action_code(self, human_msg, system_msg, *args, **kwargs):
-        code, program_name = await GenerateActionCode().run(
+        program_code, code, program_name = await GenerateActionCode().run(
             human_msg, system_msg, *args, **kwargs
         )
-        # logger.warning(type(code))
-        # logger.info(f"Code is Here:{code}")
+        self.perform_game_info_callback(program_code, self.game_memory.update_program_code)
         self.perform_game_info_callback(code, self.game_memory.update_code)
         self.perform_game_info_callback(
             program_name, self.game_memory.update_program_name

@@ -21,6 +21,7 @@ from metagpt.roles.minecraft.minecraft_base import Minecraft
 from metagpt.environment import Environment
 from metagpt.mineflayer_environment import MineflayerEnv
 from metagpt.const import CKPT_DIR
+from metagpt.config import CONFIG
 from metagpt.actions.minecraft.control_primitives import load_skills_code
 
 
@@ -36,6 +37,7 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
         default="You can mine one of oak, birch, spruce, jungle, acacia, dark oak, or mangrove logs."
     )
     code: str = Field(default="")
+    program_code: str = Field(default="") # write in skill/code/*.js
     program_name: str = Field(default="")
     critique: str = Field(default="")
     skills: dict = Field(default_factory=dict)  # for skills.json
@@ -79,30 +81,13 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
     @property
     def core_inv_items_regex(self):
         return self.mf_instance.core_inv_items_regex
-    
-    @property
-    def vectordb(self):
-        return Chroma(
-            collection_name="skill_vectordb",
-            embedding_function=OpenAIEmbeddings(),
-            persist_directory=f"{CKPT_DIR}/skill/vectordb",
-        )
-    
-    @property
-    def qa_cache_questions_vectordb(self):
-        return Chroma(
-            collection_name="qa_cache_questions_vectordb",
-            embedding_function=OpenAIEmbeddings(),
-            persist_directory=f"{CKPT_DIR}/curriculum/vectordb",
-        )
-        # TODO: change to FaissStore
-        # return FaissStore{CKPT_DIR}/ 'curriculum/vectordb'
 
     def set_mc_port(self, mc_port):
         self.mf_instance.set_mc_port(mc_port)
+        self.set_mc_resume()
     
-    def set_mc_resume(self, resume: bool = False):  # TODO: mv to config
-        if resume:
+    def set_mc_resume(self):
+        if CONFIG.resume:
             logger.info(f"Loading Action Developer from {CKPT_DIR}/action")
             with open(f"{CKPT_DIR}/action/chest_memory.json", "r") as f:
                 self.chest_memory = json.load(f)
@@ -113,29 +98,13 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
             with open(f"{CKPT_DIR}/curriculum/failed_tasks.json", "r") as f:
                 self.failed_tasks = json.load(f)
 
-            with open(f"{CKPT_DIR}/curriculum/qa_cache.json", "r") as f:
-                self.qa_cache = json.load(f)
-            # Check if qa_cache right using
-            assert self.qa_cache_questions_vectordb._collection.count() == len(
-                self.qa_cache
-            ), (
-                f"Curriculum Agent's qa cache question vectordb is not synced with qa_cache.json.\n"
-                f"There are {self.qa_cache_questions_vectordb._collection.count()} questions in vectordb "
-                f"but {len(self.qa_cache)} questions in qa_cache.json.\n"
-                f"Did you set resume=False when initializing the agent?\n"
-                f"You may need to manually delete the qa cache question vectordb directory for running from scratch.\n"
-            )               
-            
             logger.info(f"Loading Skill Manager from {CKPT_DIR}/skill\033[0m")
             with open(f"{CKPT_DIR}/skill/skills.json", "r") as f:
                 self.skills = json.load(f)
-            # Check if Skill Manager's vectordb right using
-            assert self.vectordb._collection.count() == len(self.skills), (
-                f"Skill Manager's vectordb is not synced with skills.json.\n"
-                f"There are {self.vectordb._collection.count()} skills in vectordb but {len(self.skills)} skills in skills.json.\n"
-                f"Did you set resume=False when initializing the manager?\n"
-                f"You may need to manually delete the vectordb directory for running from scratch."
-            )
+            
+            logger.info(f"Loading Qa Cache from {CKPT_DIR}/curriculum\033[0m")
+            with open(f"{CKPT_DIR}/curriculum/qa_cache.json", "r") as f:
+                self.qa_cache = json.load(f) 
     
     def register_roles(self, roles: Iterable[Minecraft]):
         for role in roles:
@@ -153,7 +122,10 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
     
     def update_context(self, context: str):
         self.context = context
-    
+
+    def update_program_code(self, program_code: str):
+        self.program_code = program_code
+
     def update_code(self, code: str):
         self.code = code  # action_developer.gen_action_code to HERE
     
@@ -369,15 +341,10 @@ class MinecraftPlayer(SoftwareCompany):
     game_memory: GameEnvironment = Field(default_factory=GameEnvironment)
     investment: float = Field(default=50.0)
     task: str = Field(default="")
-    resume: bool = Field(default=False)
     game_info: dict = Field(default={})
     
     def set_port(self, mc_port):
         self.game_memory.set_mc_port(mc_port)
-    
-    def set_resume(self, resume: bool = False):
-        self.resume = resume
-        self.game_memory.set_mc_resume(resume=resume)
     
     def check_complete_round(self):
         complete_round = []
@@ -421,7 +388,7 @@ class MinecraftPlayer(SoftwareCompany):
     async def run(self, n_round=3):
         """Run company until target round or no money"""
         round_id = 0
-        if self.resume:
+        if CONFIG.resume:
             # keep the inventory
             self.game_memory.mf_instance.reset(
                 options={

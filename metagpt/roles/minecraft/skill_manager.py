@@ -97,10 +97,7 @@ class SkillManager(Base):
         code = self.game_memory.code
         self.perform_game_info_callback(self.game_memory.event, self.game_memory.summarize_chatlog)
         event_summary = self.game_memory.event_summary
-        try:
-            program_code = code["program_code"] # fixed: Handle code is None, cuz first round DesignCurriculum(code is None) trigger this 
-        except (KeyError, TypeError):
-            program_code = ""
+        program_code = self.game_memory.program_code
 
         program_name = self.game_memory.program_name
         skills = self.game_memory.skills

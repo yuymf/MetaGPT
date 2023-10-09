@@ -31,8 +31,7 @@ pip install -r mc_requirement.txt
     mc_player.set_port(2465) # Modify this to your LAN port
 ```
 
-*注意世界游戏模式为生存，这样人物才会有血量，饥饿和库存概念；
-LAN口开放难度为创造*
+*注意世界游戏模式为生存，这样人物才会有血量，饥饿和库存概念；*
 
 python minecraft_run.py
 
