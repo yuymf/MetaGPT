@@ -45,7 +45,8 @@ class SkillManager(Base):
         return {"system_msg": [system_msg.content], "human_msg": human_msg.content}
 
     async def retrieve_skills(self, query, skills, *args, **kwargs):
-        retrieve_skills = await RetrieveSkills().run(query, skills)
+        vectordb = self.game_memory.vectordb
+        retrieve_skills = await RetrieveSkills().run(query, skills, vectordb)
         logger.info(f"Render Action Agent system message with {len(retrieve_skills)} skills")
         self.perform_game_info_callback(retrieve_skills, self.game_memory.update_retrieve_skills)
         return Message(content=f"{retrieve_skills}", instruct_content="retrieve_skills", 
@@ -75,8 +76,9 @@ class SkillManager(Base):
         )
         
         skill_desp = self.game_memory.skill_desp
+        vectordb = self.game_memory.vectordb
         new_skills_info = await AddNewSkills().run(
-            task, program_name, program_code, skills, skill_desp
+            task, program_name, program_code, skills, skill_desp, vectordb
         )
         self.perform_game_info_callback(new_skills_info, self.game_memory.append_skill)
         return Message(

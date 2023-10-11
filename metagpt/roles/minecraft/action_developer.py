@@ -237,14 +237,15 @@ class ActionDeveloper(Base):
         
         if code is not "":
             # fixme：若有独立的mc code执行入口函数，使用独立的函数
-            events = await self._execute_events()
             # 注意：这里的events对应是执行了新的action函数之后的events信息
             # 更新了评估结果, 回调了最新的环境信息到ga
             self.critic_reviewer = self._rc.env.roles["Task Reviewer"]
             await self.critic_reviewer._act()  # todo: critic act内的update event放在这里似乎更合理？
             
+            events = self.game_memory.event
+
             critique = self.game_memory.critique
-            self.perform_game_info_callback(self.game_memory.event, self.game_memory.summarize_chatlog)
+            self.perform_game_info_callback(events, self.game_memory.summarize_chatlog)
             
             event_summary = self.game_memory.event_summary
             skills = self.game_memory.skills

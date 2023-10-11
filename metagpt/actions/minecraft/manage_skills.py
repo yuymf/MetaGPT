@@ -20,13 +20,13 @@ class RetrieveSkills(Action):
         super().__init__(name, context, llm)
         self.llm.model = "gpt-3.5-turbo"
 
-    async def run(self, query, skills, *args, **kwargs):
+    async def run(self, query, skills, vectordb, *args, **kwargs):
         # Implement the logic for retrieving skills here.
-        k = min(self.vectordb._collection.count(), self.retrieval_top_k)
+        k = min(vectordb._collection.count(), self.retrieval_top_k)
         if k == 0:
             return []
         logger.info(f"Skill Manager retrieving for {k} skills")
-        docs_and_scores = self.vectordb.similarity_search_with_score(query, k=k)
+        docs_and_scores = vectordb.similarity_search_with_score(query, k=k)
         logger.info(
             f"Skill Manager retrieved skills: "
             f"{', '.join([doc.metadata['name'] for doc, _ in docs_and_scores])}"
@@ -48,7 +48,7 @@ class AddNewSkills(Action):
         self.llm.model = "gpt-3.5-turbo"
 
     async def run(
-        self, task, program_name, program_code, skills, skill_desp, *args, **kwargs
+        self, task, program_name, program_code, skills, skill_desp, vectordb, *args, **kwargs
     ):
         # Implement the logic for adding new skills here.
         # TODO: Fix this
@@ -63,18 +63,23 @@ class AddNewSkills(Action):
         
         if program_name in skills:
             logger.info(f"Skill {program_name} already exists. Rewriting!")
-            self.vectordb._collection.delete(ids=[program_name])
+            vectordb._collection.delete(ids=[program_name])
             i = 2
             while f"{program_name}V{i}.js" in os.listdir(f"{CKPT_DIR}/skill/code"):
                 i += 1
             dumped_program_name = f"{program_name}V{i}"
         else:
             dumped_program_name = program_name
-        self.vectordb.add_texts(
+        skills[program_name] = {
+            "code": program_code,
+            "description": skill_desp,
+        }
+        vectordb.add_texts(
             texts=[skill_desp],
             ids=[program_name],
             metadatas=[{"name": program_name}],
         )
+        logger.debug(f"ADD_CHECK: There are {vectordb._collection.count()} skills in vectordb")
 
         with open(f"{CKPT_DIR}/skill/code/{dumped_program_name}.js", "w") as f:
             f.write(program_code)
@@ -82,7 +87,7 @@ class AddNewSkills(Action):
             f.write(skill_desp)
         with open(f"{CKPT_DIR}/skill/skills.json", "w") as f:
             json.dump(skills, f)
-        self.vectordb.persist()
+        vectordb.persist()
         return {
             "code": program_code,
             "description": skill_desp,

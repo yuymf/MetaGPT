@@ -131,6 +131,7 @@ class CurriculumDesigner(Base):
         content = ""
         warm_up = self.game_memory.mf_instance.warm_up
         qa_cache = self.game_memory.qa_cache
+        qa_cache_questions_vectordb =self.game_memory.qa_cache_questions_vectordb
         observation = self.render_curriculum_observation(
             events=events, chest_observation=chest_observation
         )
@@ -141,7 +142,8 @@ class CurriculumDesigner(Base):
             ).content
             system_msg = [self.render_design_curriculum_system_message().content]
             questions, answers = await DesignCurriculum().generate_qa(
-                events=events, qa_cache=qa_cache, human_msg=human_msg, system_msg=system_msg
+                events=events, qa_cache=qa_cache, qa_cache_questions_vectordb=qa_cache_questions_vectordb, 
+                human_msg=human_msg, system_msg=system_msg
             )
             logger.debug(f"Generate_qa result is HERE: Ques: {questions}, Ans: {answers}")
             i = 1
@@ -300,6 +302,7 @@ class CurriculumDesigner(Base):
         inventoryUsed = events[-1][1]["status"]["inventoryUsed"]
         task = self.game_memory.current_task
         qa_cache = self.game_memory.qa_cache
+        qa_cache_questions_vectordb = self.game_memory.qa_cache_questions_vectordb
 
         if self.game_memory.progress == 0:
             context = self.game_memory.context
@@ -309,7 +312,7 @@ class CurriculumDesigner(Base):
             )
         else:
             context = await DesignCurriculum().run(
-                task, qa_cache, human_msg, system_msg, *args, **kwargs
+                task, qa_cache, qa_cache_questions_vectordb, human_msg, system_msg, *args, **kwargs
             )
         self.perform_game_info_callback(context, self.game_memory.update_context)
         return Message(
