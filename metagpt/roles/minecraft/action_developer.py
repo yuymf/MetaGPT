@@ -235,7 +235,7 @@ class ActionDeveloper(Base):
             human_msg, system_msg, *args, **kwargs
         )
         
-        if code is not None:
+        if code is not "":
             # fixme：若有独立的mc code执行入口函数，使用独立的函数
             events = await self._execute_events()
             # 注意：这里的events对应是执行了新的action函数之后的events信息

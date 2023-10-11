@@ -130,6 +130,7 @@ class CurriculumDesigner(Base):
 
         content = ""
         warm_up = self.game_memory.mf_instance.warm_up
+        qa_cache = self.game_memory.qa_cache
         observation = self.render_curriculum_observation(
             events=events, chest_observation=chest_observation
         )
@@ -140,7 +141,7 @@ class CurriculumDesigner(Base):
             ).content
             system_msg = [self.render_design_curriculum_system_message().content]
             questions, answers = await DesignCurriculum().generate_qa(
-                events=events, human_msg=human_msg, system_msg=system_msg
+                events=events, qa_cache=qa_cache, human_msg=human_msg, system_msg=system_msg
             )
             logger.debug(f"Generate_qa result is HERE: Ques: {questions}, Ans: {answers}")
             i = 1
@@ -298,6 +299,7 @@ class CurriculumDesigner(Base):
         chest_observation = self.game_memory.chest_observation
         inventoryUsed = events[-1][1]["status"]["inventoryUsed"]
         task = self.game_memory.current_task
+        qa_cache = self.game_memory.qa_cache
 
         if self.game_memory.progress == 0:
             context = self.game_memory.context
@@ -307,7 +309,7 @@ class CurriculumDesigner(Base):
             )
         else:
             context = await DesignCurriculum().run(
-                task, human_msg, system_msg, *args, **kwargs
+                task, qa_cache, human_msg, system_msg, *args, **kwargs
             )
         self.perform_game_info_callback(context, self.game_memory.update_context)
         return Message(
@@ -322,8 +324,9 @@ class CurriculumDesigner(Base):
         self.maintain_actions(todo)
 
         # 获取最新的游戏周边环境信息
-        # events = await self._obtain_events()
-        events = self.game_memory.event
+        events = await self._obtain_events()
+        logger.info(f"Retrieve event is HERE: {events}, current task is {self.game_memory.current_task}")
+        # events = self.game_memory.event
         chest_observation = self.game_memory.chest_observation
 
         design_task_message = await self.encapsule_design_task_message(

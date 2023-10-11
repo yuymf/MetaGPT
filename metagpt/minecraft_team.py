@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 import requests
 import json
 import re
+import time
+
 from langchain.vectorstores import Chroma
 from langchain.embeddings.openai import OpenAIEmbeddings
 from metagpt.document_store import FaissStore
@@ -303,8 +305,19 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
             self.update_event(events)
             return events
         except Exception as e:
+            time.sleep(3)  # wait for mineflayer to exit
+            # reset bot status here
+            events = self.mf_instance.reset(
+                options={
+                    "mode": "hard",
+                    "wait_ticks": 20,
+                    "inventory": self.event[-1][1]["inventory"],
+                    "equipment": self.event[-1][1]["status"]["equipment"],
+                    "position": self.event[-1][1]["status"]["position"],
+                }
+            )
+            self.update_event(events)
             logger.error(f"Failed to retrieve Minecraft events: {str(e)}")
-            raise {}
     
     async def on_event_execute(self, *args):
         """
@@ -327,8 +340,19 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
             self.update_event(events)
             return events
         except Exception as e:
+            time.sleep(3)  # wait for mineflayer to exit
+            # reset bot status here
+            events = self.mf_instance.reset(
+                options={
+                    "mode": "hard",
+                    "wait_ticks": 20,
+                    "inventory": self.event[-1][1]["inventory"],
+                    "equipment": self.event[-1][1]["status"]["equipment"],
+                    "position": self.event[-1][1]["status"]["position"],
+                }
+            )
+            self.update_event(events)
             logger.error(f"Failed to execute Minecraft events: {str(e)}")
-            raise {}
 
 
 class MinecraftPlayer(SoftwareCompany):
