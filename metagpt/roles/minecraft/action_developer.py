@@ -216,7 +216,8 @@ class ActionDeveloper(Base):
         self.perform_game_info_callback(new_skills_info, self.game_memory.append_skill)
     
     async def retrieve_skills(self, query, skills, *args, **kwargs):
-        retrieve_skills = await RetrieveSkills().run(query, skills)
+        vectordb = self.game_memory.vectordb
+        retrieve_skills = await RetrieveSkills().run(query, skills, vectordb)
         logger.info(f"Render Action Agent system message with {len(retrieve_skills)} skills")
         self.perform_game_info_callback(retrieve_skills, self.game_memory.update_retrieve_skills)
         # return Message(content=f"{retrieve_skills}", instruct_content="retrieve_skills",
@@ -235,7 +236,7 @@ class ActionDeveloper(Base):
             human_msg, system_msg, *args, **kwargs
         )
         
-        if code is not "":
+        if code is not None:
             # fixme：若有独立的mc code执行入口函数，使用独立的函数
             # 注意：这里的events对应是执行了新的action函数之后的events信息
             # 更新了评估结果, 回调了最新的环境信息到ga

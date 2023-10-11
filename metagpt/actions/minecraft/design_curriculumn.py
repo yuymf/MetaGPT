@@ -131,7 +131,7 @@ class DesignCurriculum(Action):
         assert len(questions_new) == len(questions) == len(answers)
         logger.info(f"Curriculum Agent generate_qa Questions: {questions}")
         logger.info(f"Curriculum Agent generate_qa Answers: {answers}")
-        return questions, answers
+        return questions, answers, qa_cache
 
     async def generate_qa_step1(self, events, human_msg, system_msg):
         biome = events[-1][1]["status"]["biome"].replace("_", " ")
@@ -193,7 +193,7 @@ class DesignCurriculum(Action):
                 json.dump(qa_cache, f)
             qa_cache_questions_vectordb.persist()
         context = f"Question: {question}\n{answer}"
-        return context
+        return context, qa_cache
 
     async def generate_context(self, task, qa_cache, qa_cache_questions_vectordb, max_retries=5):
         """
@@ -205,10 +205,10 @@ class DesignCurriculum(Action):
         if max_retries == 0:
             raise RuntimeError("Max retries reached, failed to propose context.")
         try:
-            context = await self.get_context_from_task(
+            context, qa_cache = await self.get_context_from_task(
                 task=task, qa_cache=qa_cache, qa_cache_questions_vectordb=qa_cache_questions_vectordb
             )  # Curriculum Agent Question: How to craft 4 wooden planks in Minecraft? & Curriculum Agent Answer: ...
-            return context
+            return context, qa_cache
         except Exception as e:
             logger.info(f"Error parsing curriculum response: {e}. Trying again!")
             return await self.generate_context(
@@ -222,7 +222,7 @@ class DesignCurriculum(Action):
         logger.info(f"run {self.__repr__()}")
         # Generate curriculum-related questions and answers.
         # curriculum_qustion = await self.generate_qa_step1(events, human_msg, system_msg)
-        curriculum_context = await self.generate_context(task, qa_cache, qa_cache_questions_vectordb)
+        curriculum_context, qa_cache = await self.generate_context(task, qa_cache, qa_cache_questions_vectordb)
 
         # Return the generated questions and answers.
-        return curriculum_context
+        return curriculum_context, qa_cache

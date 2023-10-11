@@ -60,6 +60,9 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
     mf_instance: MineflayerEnv = Field(default_factory=MineflayerEnv)
     runtime_status: bool = False  # equal to action execution status: success or failed
 
+    qa_cache_questions_vectordb: Chroma = Field(default_factory=Chroma)
+    vectordb: Chroma = Field(default_factory=Chroma)
+
     @property
     def progress(self):
         # return len(self.completed_tasks) + 10 # Test only
@@ -84,27 +87,23 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
     def core_inv_items_regex(self):
         return self.mf_instance.core_inv_items_regex
 
-    @property
-    def qa_cache_questions_vectordb(self):
-        return Chroma(
-            collection_name="qa_cache_questions_vectordb",
-            embedding_function=OpenAIEmbeddings(),
-            persist_directory=f"{CKPT_DIR}/curriculum/vectordb",
-        )
-
-    @property
-    def vectordb(self):
-        return Chroma(
-            collection_name="skill_vectordb",
-            embedding_function=OpenAIEmbeddings(),
-            persist_directory=f"{CKPT_DIR}/skill/vectordb",
-        )
-
     def set_mc_port(self, mc_port):
         self.mf_instance.set_mc_port(mc_port)
         self.set_mc_resume()
 
     def set_mc_resume(self):
+        self.qa_cache_questions_vectordb = Chroma(
+            collection_name="qa_cache_questions_vectordb",
+            embedding_function=OpenAIEmbeddings(),
+            persist_directory=f"{CKPT_DIR}/curriculum/vectordb",
+        )
+
+        self.vectordb = Chroma(
+            collection_name="skill_vectordb",
+            embedding_function=OpenAIEmbeddings(),
+            persist_directory=f"{CKPT_DIR}/skill/vectordb",
+        )
+
         if CONFIG.resume:
             logger.info(f"Loading Action Developer from {CKPT_DIR}/action")
             with open(f"{CKPT_DIR}/action/chest_memory.json", "r") as f:
@@ -202,6 +201,9 @@ class GameEnvironment(BaseModel, arbitrary_types_allowed=True):
 
     def append_skill(self, skill: dict):
         self.skills[self.program_name] = skill  # skill_manager.retrieve_skills to HERE
+
+    def update_qa_cache(self, qa_cache: dict):
+        self.qa_cache = qa_cache
 
     def update_retrieve_skills(self, retrieve_skills: list):
         self.retrieve_skills = retrieve_skills

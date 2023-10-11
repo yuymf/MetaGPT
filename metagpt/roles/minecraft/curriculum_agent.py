@@ -141,10 +141,11 @@ class CurriculumDesigner(Base):
                 events=events, chest_observation=chest_observation
             ).content
             system_msg = [self.render_design_curriculum_system_message().content]
-            questions, answers = await DesignCurriculum().generate_qa(
+            questions, answers, qa_cache = await DesignCurriculum().generate_qa(
                 events=events, qa_cache=qa_cache, qa_cache_questions_vectordb=qa_cache_questions_vectordb, 
                 human_msg=human_msg, system_msg=system_msg
             )
+            self.perform_game_info_callback(qa_cache, self.game_memory.update_qa_cache)
             logger.debug(f"Generate_qa result is HERE: Ques: {questions}, Ans: {answers}")
             i = 1
             for question, answer in zip(questions, answers):
@@ -311,10 +312,11 @@ class CurriculumDesigner(Base):
                 self, events=events, chest_observation=chest_observation
             )
         else:
-            context = await DesignCurriculum().run(
+            context, qa_cache = await DesignCurriculum().run(
                 task, qa_cache, qa_cache_questions_vectordb, human_msg, system_msg, *args, **kwargs
             )
         self.perform_game_info_callback(context, self.game_memory.update_context)
+        self.perform_game_info_callback(qa_cache, self.game_memory.update_qa_cache)
         return Message(
             content=f"{context}",
             instruct_content="curriculum_design",

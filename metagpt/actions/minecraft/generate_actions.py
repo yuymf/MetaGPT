@@ -36,7 +36,7 @@ class GenerateActionCode(Action):
             )
         except:
             logger.error(f"Failed to parse response: {parsed_result}")
-            return "", "", ""
+            return None, None, None #"", "", ""
 
     async def run(self, human_msg, system_msg, *args, **kwargs):
         logger.info(f"run {self.__repr__()}")
